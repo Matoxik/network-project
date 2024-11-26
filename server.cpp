@@ -7,13 +7,19 @@
 #include <string.h>
 #include <unistd.h>
 
+
+
+
+const unsigned int SOCKET_BUFFER_SIZE = 1024;
+
+
 int main(int argc, char **argv) {
     struct sockaddr_in localAddress, clientAddress;
 
     // Konfiguracja adresu lokalnego
     localAddress.sin_family = AF_INET;
     localAddress.sin_port = htons(1100); // Port 1100
-    localAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
+    localAddress.sin_addr.s_addr = INADDR_ANY;
 
     // Tworzenie gniazda
     int server_socket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -30,23 +36,75 @@ int main(int argc, char **argv) {
     }
 
     // Bufor do odbioru danych
-    char buff[256];
-    socklen_t len = sizeof(clientAddress);
-
-    for (;;) {
-        // Wyczyszczenie bufora
-        bzero(buff, sizeof(buff));
-
-        // Odczyt danych
-        int n = recvfrom(server_socket, (char *)buff, sizeof(buff), 0, (struct sockaddr *)&clientAddress, &len);
-        if (n < 0) {
-            perror("Could not receive");
+    char buffer[SOCKET_BUFFER_SIZE];
+    
+    //Zmienne game state (zmienne ktore sa wymieniane miedzy klientem a serwerem)
+    int player_x = 0;
+    int player_y = 0;
+    
+    bool is_running = true;
+    while (is_running) {
+       
+       // Odbior danych od klienta
+        socklen_t clientAddress_size = sizeof(clientAddress);
+        int bytes_received = recvfrom( server_socket, buffer, SOCKET_BUFFER_SIZE, 0, (sockaddr*)&clientAddress, &clientAddress_size);
+        if (bytes_received < 0) {
+            perror("Server could not receive");
             close(server_socket);
             exit(EXIT_FAILURE);
         }
+         
+        // Obsluga danych wejsciowych od klienta
+        char client_input = buffer[0];
 
-        // Wyświetlanie odebranej wiadomości
-        printf("Received msg: %s\n", buff);
+        switch (client_input)
+        {
+        case 'w':
+            ++player_y;
+            break;
+
+        case 'a':
+            --player_x;
+            break;
+
+        case 's':
+            --player_y;
+            break;
+
+        case 'd':
+            ++player_x;
+            break;
+
+        case 'q':
+            is_running = false;
+            break;
+
+        default:
+            perror("Unhandled input");
+            close(server_socket);
+            exit(EXIT_FAILURE);
+            break;
+        }
+
+        // create state packet
+        int write_index = 0;
+        memcpy(&buffer[write_index], &player_x, sizeof(player_x));
+        write_index += sizeof(player_x);
+
+        memcpy(&buffer[write_index], &player_y, sizeof(player_y));
+        write_index += sizeof(player_y);
+
+        memcpy(&buffer[write_index], &is_running, sizeof(is_running));
+
+        // send back to client
+        int buffer_length = sizeof(player_x) + sizeof(player_y) + sizeof(is_running);
+
+        if (sendto(server_socket, buffer, buffer_length, 0, (const struct sockaddr *)&clientAddress, sizeof(clientAddress)) < 0) {
+            perror("Server could not send back");
+            close(server_socket);
+            exit(EXIT_FAILURE);
+        }
+   
     }
 
     close(server_socket);
