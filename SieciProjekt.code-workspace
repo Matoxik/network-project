@@ -49,7 +49,10 @@
 			"ostream": "cpp",
 			"stdexcept": "cpp",
 			"streambuf": "cpp",
-			"typeinfo": "cpp"
+			"typeinfo": "cpp",
+			"stdlib.h": "c",
+			"in.h": "c",
+			"string.h": "c"
 		}
 	}
 }
