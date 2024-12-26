@@ -11,13 +11,15 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define SOCKET_BUFFER_SIZE 1024
 #define ACCELERATION 0.1f
 #define MAX_SPEED 2.0f
 #define TURN_SPEED 0.1f
 #define SECONDS_PER_TICK (1.0f / 60.0f)
 #define MAX_CLIENTS 12
 #define CLIENT_TIMEOUT 5.0f
+
+const unsigned short PORT = 1100;
+const unsigned int SOCKET_BUFFER_SIZE = 1024;
 
 
 // Funckje pomocnicze do fixed tick rate
@@ -39,7 +41,7 @@ struct Player_State
 
 struct Player_Input
 {
-    int up, down, left, right; //!!! Szansa ze powinien byc bool zamiast int
+    bool up, down, left, right; //!!! Szansa ze powinien byc bool zamiast int
 };
 
 // Enumy przechowujace rozne pakiety
@@ -63,7 +65,7 @@ int main(int argc, char **argv)
 
     // Konfiguracja adresu lokalnego
     localAddress.sin_family = AF_INET;
-    localAddress.sin_port = htons(1100); // Port 1100
+    localAddress.sin_port = htons(PORT); 
     localAddress.sin_addr.s_addr = INADDR_ANY;
 
     // Tworzenie gniazda
@@ -74,6 +76,8 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    
+
     // Przypisanie adresu do gniazda
     if (bind(server_socket, (struct sockaddr *)&localAddress, sizeof(localAddress)) == -1)
     {
@@ -81,8 +85,12 @@ int main(int argc, char **argv)
         close(server_socket);
         exit(EXIT_FAILURE);
     }
-
+     
+    // Ustawienie socketa w tryb nieblokujacy
+    int flags = fcntl(server_socket, F_GETFL, 0);
+    fcntl(server_socket, F_SETFL, flags | O_NONBLOCK);
     // Bufor do odbioru danych
+   
     char buffer[SOCKET_BUFFER_SIZE];
 
 
@@ -95,9 +103,6 @@ int main(int argc, char **argv)
     Player_State client_objects[MAX_CLIENTS];
     Player_Input client_inputs[MAX_CLIENTS];
 
-    // Ustawienie socketa w tryb nieblokujacy
-    int flags = fcntl(server_socket, F_GETFL, 0);
-    fcntl(server_socket, F_SETFL, flags | O_NONBLOCK);
 
    
 
@@ -293,7 +298,7 @@ int main(int argc, char **argv)
         int flags = 0;
         struct sockaddr_in to;
         to.sin_family = AF_INET;
-        to.sin_port = htons(1100);
+        to.sin_port = htons(PORT);
         int to_length = sizeof(to);
 
 
