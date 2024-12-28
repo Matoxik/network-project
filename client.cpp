@@ -12,6 +12,10 @@
 #include <ctime>
 #include <fcntl.h>
 #include <errno.h>
+#include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
+#include "Player.h"
+#include "Background.h"
 
 #define SECONDS_PER_TICK (1.0f / 60.0f)
 #define MAX_CLIENTS 12
@@ -19,9 +23,10 @@
 const unsigned short PORT = 1100;
 const unsigned int SOCKET_BUFFER_SIZE = 1024;
 
-// Funckje pomocnicze do fixed tick rate
 timespec timespec_diff(const timespec &start, const timespec &end);
 float timespec_to_seconds(const timespec &ts);
+
+std::map<std::string, sf::Texture> textureMap; // Globalna mapa tekstur
 
 struct IP_Endpoint
 {
@@ -37,15 +42,11 @@ static IP_Endpoint ip_endpoint_create(unsigned char a, unsigned char b, unsigned
     return ip_endpoint;
 }
 
-struct Player_State
-{
-    float x, y, facing;
-};
-
 struct Input
 {
     bool up, down, left, right;
 };
+
 static Input g_input;
 
 enum class Client_Message : unsigned char
@@ -64,8 +65,6 @@ enum class Server_Message : unsigned char
 int main()
 {
     int client_socket;
-
-    // Tworzenie gniazda
     client_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if (client_socket < 0)
     {
@@ -73,23 +72,19 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    // Ustawienie socketa w tryb nieblokujacy
     int flags = fcntl(client_socket, F_GETFL, 0);
     fcntl(client_socket, F_SETFL, flags | O_NONBLOCK);
 
     char buffer[SOCKET_BUFFER_SIZE];
-
     IP_Endpoint server_endpoint = ip_endpoint_create(127, 0, 0, 1, PORT);
 
     buffer[0] = (char)Client_Message::Join;
-
     sockaddr_in server_address;
     server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = htonl(server_endpoint.address); // !!! Moze nie dzialac
+    server_address.sin_addr.s_addr = htonl(server_endpoint.address);
     server_address.sin_port = htons(server_endpoint.port);
     int server_address_size = sizeof(server_address);
 
-    // Wysylanie join packet, prosba o nadanie ID
     if (sendto(client_socket, buffer, 1, 0, (sockaddr *)&server_address, server_address_size) == -1)
     {
         perror("Could not send join packet to server");
@@ -97,108 +92,137 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    Player_State objects[MAX_CLIENTS];
-    unsigned int num_objects = 0;
     unsigned short slot = 65535;
 
-    // Ustawienie czasu startowego
     timespec clock_frequency, tick_start_time, tick_end_time;
     clock_gettime(CLOCK_MONOTONIC, &clock_frequency);
+
+    sf::RenderWindow window(sf::VideoMode(1920, 1080), "Network Project <3");
+    StartBackground startBackground;
+    window.setFramerateLimit(60);
+
+    std::vector<Player> players; // Lista graczy
 
     bool is_running = true;
     while (is_running)
     {
-
+        window.clear();
+        clock_gettime(CLOCK_MONOTONIC, &tick_start_time);
         IP_Endpoint from;
-
-        int flags = 0;
         sockaddr_in from_address;
         socklen_t from_address_size = sizeof(from_address);
         int bytes_received = recvfrom(client_socket, buffer, SOCKET_BUFFER_SIZE, 0, (sockaddr *)&from_address, &from_address_size);
         if (bytes_received == -1)
         {
-            int error = errno; // Pobierz kod błędu z errno
+            int error = errno;
             if (error != EAGAIN && error != EWOULDBLOCK)
             {
                 printf("recvfrom returned -1, errno %d\n", error);
             }
-            break;
         }
-
-        from.address = ntohl(from_address.sin_addr.s_addr);
-        from.port = ntohs(from_address.sin_port);
-
-        while (bytes_received != 1)
+        else
         {
-            // W zaleznosci od otrzymanego pakietu
-            switch (static_cast<Server_Message>(buffer[0]))
+            from = {};
+            from.address = ntohl(from_address.sin_addr.s_addr);
+            from.port = ntohs(from_address.sin_port);
+            if (bytes_received > 0)
             {
-
-            case Server_Message::Join_Result:
-            {
-                // buffer[1] -> sukces/porazka
-                // buffer[2] -> ID
-                if (buffer[1])
+                switch (static_cast<Server_Message>(buffer[0]))
                 {
-                    memcpy(&slot, &buffer[2], sizeof(slot));
-                }
-                else
+                case Server_Message::Join_Result:
                 {
-                    perror("server didn't let us in\n");
+                    if (buffer[1])
+                    {
+                        memcpy(&slot, &buffer[2], sizeof(slot));
+                    }
+                    else
+                    {
+                        perror("server didn't let us in\n");
+                    }
                 }
-            }
-            break;
-
-            // Przyjecie od serwera aktualnego stanu gry
-            case Server_Message::State:
-            {
-                num_objects = 0;
-                unsigned int bytes_read = 1;
-                while (bytes_read < bytes_received)
+                break;
+                case Server_Message::State:
                 {
-                    // Przekopiowanie calego pakietu do zmiennych, pakiet zawiera informacje na temat wszystkich graczy
-                    unsigned short id; // unused
-                    memcpy(&id, &buffer[bytes_read], sizeof(id));
-                    bytes_read += sizeof(id);
+                    int bytes_read = 1;
+                    unsigned short id;
 
-                    memcpy(&objects[num_objects].x,
-                           &buffer[bytes_read],
-                           sizeof(objects[num_objects].x));
-                    bytes_read += sizeof(objects[num_objects].x);
+                    while (bytes_read < bytes_received)
+                    {
+                        memcpy(&id, &buffer[bytes_read], sizeof(id));
+                        bytes_read += sizeof(id);
 
-                    memcpy(&objects[num_objects].y,
-                           &buffer[bytes_read],
-                           sizeof(objects[num_objects].y));
-                    bytes_read += sizeof(objects[num_objects].y);
+                        // Sprawdzenie, czy gracz istnieje w wektorze
+                        if (id >= players.size())
+                        {
+                            // Mapowanie tekstur na podstawie ID
+                            std::string textureFile;
+                            textureFile = "textures/ludzik.png";
 
-                    memcpy(&objects[num_objects].facing,
-                           &buffer[bytes_read],
-                           sizeof(objects[num_objects].facing));
-                    bytes_read += sizeof(objects[num_objects].facing);
+                            // Dodanie nowego gracza, przekazując mapę tekstur
+                            players.emplace_back(textureFile, textureMap);
+                            std::cout << "Dodano gracza ID: " << id << " z teksturą: " << textureFile << "\n";
+                        }
 
-                    ++num_objects;
+                        // Aktualizacja pozycji istniejącego gracza
+                        memcpy(&players[id].x, &buffer[bytes_read], sizeof(players[id].x));
+                        bytes_read += sizeof(players[id].x);
+
+                        memcpy(&players[id].y, &buffer[bytes_read], sizeof(players[id].y));
+                        bytes_read += sizeof(players[id].y);
+
+                        memcpy(&players[id].facing, &buffer[bytes_read], sizeof(players[id].facing));
+                        bytes_read += sizeof(players[id].facing);
+
+                        players[id].assignTexture(id);
+                        players[id].update();
+                    }
                 }
-            }
-            break;
+                break;
+                }
             }
         }
 
-        // Wysylanie inputu do serwera
+        sf::Event event;
+        window.pollEvent(event);
+
+        if (event.type == sf::Event::Closed)
+        {
+            is_running = false;
+            break;
+        }
+
+        if (event.type == sf::Event::KeyPressed || event.type == sf::Event::KeyReleased)
+        {
+            bool is_pressed = (event.type == sf::Event::KeyPressed);
+            switch (event.key.code)
+            {
+            case sf::Keyboard::Up:
+                g_input.up = is_pressed;
+                break;
+            case sf::Keyboard::Down:
+                g_input.down = is_pressed;
+                break;
+            case sf::Keyboard::Left:
+                g_input.left = is_pressed;
+                break;
+            case sf::Keyboard::Right:
+                g_input.right = is_pressed;
+                break;
+            default:
+                break;
+            }
+        }
+
         if (slot != 65535)
         {
             buffer[0] = (unsigned char)Client_Message::Input;
             int bytes_written = 1;
-
             memcpy(&buffer[bytes_written], &slot, sizeof(slot));
             bytes_written += sizeof(slot);
-
-            unsigned char input = (unsigned char)g_input.up |
-                                  ((unsigned char)g_input.down << 1) |
-                                  ((unsigned char)g_input.left << 2) |
-                                  ((unsigned char)g_input.right << 3);
+            unsigned char input = (unsigned char)g_input.up | ((unsigned char)g_input.down << 1) |
+                                  ((unsigned char)g_input.left << 2) | ((unsigned char)g_input.right << 3);
             buffer[bytes_written] = input;
             ++bytes_written;
-
             if (sendto(client_socket, buffer, bytes_written, 0, (sockaddr *)&server_address, server_address_size) == -1)
             {
                 perror("Could not send state/input packet to server");
@@ -207,55 +231,45 @@ int main()
             }
         }
 
-        // Update and draw dla wszystkich obiektow (maksymalnie 12 graczy)
-        for (unsigned int i = 0; i < num_objects; ++i)
+        startBackground.draw(window);
+        // Rysowanie wszystkich graczy
+        for (unsigned short i = 0; i < players.size(); ++i)
         {
-          
-            float x = objects[i].x * 0.01f;
-            float y = objects[i].y * -0.01f;
-
-            //Player.update(x,y);
-            //TO DO
+            players[i].draw(window);
         }
 
-        // Obliczanie czasu wykonania ticku
+        window.display();
+
         clock_gettime(CLOCK_MONOTONIC, &tick_end_time);
         timespec elapsed_time = timespec_diff(tick_start_time, tick_end_time);
         float time_taken_s = timespec_to_seconds(elapsed_time);
-
         while (time_taken_s < SECONDS_PER_TICK)
         {
             float time_left_s = SECONDS_PER_TICK - time_taken_s;
             timespec sleep_time = {0, (long)(time_left_s * 1000000000)};
             nanosleep(&sleep_time, nullptr);
-
             clock_gettime(CLOCK_MONOTONIC, &tick_end_time);
             elapsed_time = timespec_diff(tick_start_time, tick_end_time);
             time_taken_s = timespec_to_seconds(elapsed_time);
         }
     }
 
-   
-   //Wyslanie do serwera informacji o rozlaczeniu klienta
-   buffer[0] = (unsigned char)Client_Message::Leave;
-   int bytes_written_leave = 1;
-   memcpy(&buffer[bytes_written_leave], &slot, sizeof(slot));
+    buffer[0] = (unsigned char)Client_Message::Leave;
+    int bytes_written_leave = 1;
+    memcpy(&buffer[bytes_written_leave], &slot, sizeof(slot));
+    printf("Wyslano leave slot: %d\n", slot);
+    printf("Wyslano leave buffer: %d\n", buffer[1]);
 
-     if (sendto(client_socket, buffer, bytes_written_leave, 0, (sockaddr *)&server_address, server_address_size) == -1)
-            {
-                perror("Could not send leave packet to server");
-                close(client_socket);
-                exit(EXIT_FAILURE);
-            }
-   
-   
+    if (sendto(client_socket, buffer, bytes_written_leave, 0, (sockaddr *)&server_address, server_address_size) == -1)
+    {
+        perror("Could not send leave packet to server");
+        close(client_socket);
+        exit(EXIT_FAILURE);
+    }
+
     close(client_socket);
     return 0;
 }
-
-
-
-
 
 timespec timespec_diff(const timespec &start, const timespec &end)
 {

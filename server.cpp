@@ -12,15 +12,14 @@
 #include <errno.h>
 
 #define ACCELERATION 0.1f
-#define MAX_SPEED 2.0f
+#define X_VELOCITY 6.0f
 #define TURN_SPEED 0.1f
 #define SECONDS_PER_TICK (1.0f / 60.0f)
-#define MAX_CLIENTS 12
+#define MAX_CLIENTS 4
 #define CLIENT_TIMEOUT 5.0f
 
 const unsigned short PORT = 1100;
 const unsigned int SOCKET_BUFFER_SIZE = 1024;
-
 
 // Funckje pomocnicze do fixed tick rate
 timespec timespec_diff(const timespec &start, const timespec &end);
@@ -65,7 +64,7 @@ int main(int argc, char **argv)
 
     // Konfiguracja adresu lokalnego
     localAddress.sin_family = AF_INET;
-    localAddress.sin_port = htons(PORT); 
+    localAddress.sin_port = htons(PORT);
     localAddress.sin_addr.s_addr = INADDR_ANY;
 
     // Tworzenie gniazda
@@ -76,8 +75,6 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    
-
     // Przypisanie adresu do gniazda
     if (bind(server_socket, (struct sockaddr *)&localAddress, sizeof(localAddress)) == -1)
     {
@@ -85,14 +82,13 @@ int main(int argc, char **argv)
         close(server_socket);
         exit(EXIT_FAILURE);
     }
-     
+
     // Ustawienie socketa w tryb nieblokujacy
     int flags = fcntl(server_socket, F_GETFL, 0);
     fcntl(server_socket, F_SETFL, flags | O_NONBLOCK);
     // Bufor do odbioru danych
-   
-    char buffer[SOCKET_BUFFER_SIZE];
 
+    char buffer[SOCKET_BUFFER_SIZE];
 
     // Ustawienie czasu startowego
     timespec clock_frequency, tick_start_time, tick_end_time;
@@ -102,9 +98,6 @@ int main(int argc, char **argv)
     float time_since_heard_from_clients[MAX_CLIENTS];
     Player_State client_objects[MAX_CLIENTS];
     Player_Input client_inputs[MAX_CLIENTS];
-
-
-   
 
     for (unsigned short i = 0; i < MAX_CLIENTS; ++i)
     {
@@ -124,6 +117,7 @@ int main(int argc, char **argv)
             // Odbior danych od klienta
             socklen_t clientAddress_size = sizeof(clientAddress);
             int bytes_received = recvfrom(server_socket, buffer, SOCKET_BUFFER_SIZE, 0, (sockaddr *)&clientAddress, &clientAddress_size);
+
             if (bytes_received == -1)
             {
                 int error = errno; // Pobierz kod błędu z errno
@@ -192,14 +186,27 @@ int main(int argc, char **argv)
 
             case Client_Message::Leave:
             {
-                // Zwolnienie slota
-                unsigned short slot;
-                memcpy(&slot, &buffer[1], 2);
-                if (client_endpoints[slot] == clientAddress_endpoint)
+                unsigned short slot_leave = MAX_CLIENTS; // Domyślna wartość, jeśli klient nie zostanie znaleziony
+                // Znajdź slot przypisany do tego klienta na podstawie jego adresu
+                for (unsigned short i = 0; i < MAX_CLIENTS; ++i)
                 {
-                    client_endpoints[slot] = {};
+                    if (client_endpoints[i] == clientAddress_endpoint)
+                    {
+                        slot_leave = i;
+                        break;
+                    }
                 }
-                printf("Client_Message::Leave from %hu(%u:%hu)\n", slot, clientAddress_endpoint.address, clientAddress_endpoint.port);
+                if (slot_leave < MAX_CLIENTS)
+                {
+                    // Jeśli znaleziono slot, zwolnij go
+                    client_endpoints[slot_leave] = {};
+                    printf("Client_Message::Leave from slot %hu (%u:%hu)\n", slot_leave, clientAddress_endpoint.address, clientAddress_endpoint.port);
+                }
+                else
+                {
+                    // Jeśli slot nie został znaleziony, zgłoś błąd
+                    printf("Client_Message::Leave received from unknown client (%u:%hu)\n", clientAddress_endpoint.address, clientAddress_endpoint.port);
+                }
             }
             break;
 
@@ -207,8 +214,6 @@ int main(int argc, char **argv)
             {
                 unsigned short slot;
                 memcpy(&slot, &buffer[1], 2);
-
-                printf("%d %hu\n", bytes_received, slot);
 
                 if (client_endpoints[slot] == clientAddress_endpoint)
                 {
@@ -234,40 +239,31 @@ int main(int argc, char **argv)
 
         for (unsigned short i = 0; i < MAX_CLIENTS; ++i)
         {
-            if (client_endpoints[i].address) // Jesli klient jest w uzyciu
+            if (client_endpoints[i].address) // Jeśli klient jest w użyciu
             {
-                // Aktualizuje player state na podstawie player input
-                if (client_inputs[i].up)
-                {
-                    client_objects[i].speed += ACCELERATION * SECONDS_PER_TICK;
-                    if (client_objects[i].speed > MAX_SPEED)
-                    {
-                        client_objects[i].speed = MAX_SPEED;
-                    }
-                }
-                if (client_inputs[i].down)
-                {
-                    client_objects[i].speed -= ACCELERATION * SECONDS_PER_TICK;
-                    if (client_objects[i].speed < 0.0f)
-                    {
-                        client_objects[i].speed = 0.0f;
-                    }
-                }
+                // Ruch w lewo
                 if (client_inputs[i].left)
                 {
-                    client_objects[i].facing -= TURN_SPEED * SECONDS_PER_TICK;
+                    client_objects[i].x = -X_VELOCITY; // Maksymalna prędkość w lewo
                 }
-                if (client_inputs[i].right)
+                // Ruch w prawo
+                else if (client_inputs[i].right)
                 {
-                    client_objects[i].facing += TURN_SPEED * SECONDS_PER_TICK;
+                    client_objects[i].x = X_VELOCITY; // Maksymalna prędkość w prawo
+                }
+                else
+                {
+                    client_objects[i].x = 0.0f; // Brak ruchu, zatrzymanie
                 }
 
-                client_objects[i].x += client_objects[i].speed * SECONDS_PER_TICK * sinf(client_objects[i].facing);
-                client_objects[i].y += client_objects[i].speed * SECONDS_PER_TICK * cosf(client_objects[i].facing);
+                // Aktualizacja pozycji gracza na podstawie prędkości
+                // client_objects[i].x += client_objects[i].speed * SECONDS_PER_TICK;
 
+                // Sprawdzanie timeoutu klienta
                 time_since_heard_from_clients[i] += SECONDS_PER_TICK;
                 if (time_since_heard_from_clients[i] > CLIENT_TIMEOUT)
                 {
+                    printf("Timeout klienta\n");
                     client_endpoints[i] = {};
                 }
             }
@@ -301,7 +297,6 @@ int main(int argc, char **argv)
         to.sin_port = htons(PORT);
         int to_length = sizeof(to);
 
-
         for (unsigned short i = 0; i < MAX_CLIENTS; ++i)
         {
             if (client_endpoints[i].address)
@@ -309,7 +304,7 @@ int main(int argc, char **argv)
                 to.sin_addr.s_addr = client_endpoints[i].address;
                 to.sin_port = client_endpoints[i].port;
 
-                if (sendto(server_socket, buffer, bytes_written, flags, (sockaddr*)&to, to_length) == -1)
+                if (sendto(server_socket, buffer, bytes_written, flags, (sockaddr *)&to, to_length) == -1)
                 {
                     printf("sendto back to client failed\n");
                 }
@@ -336,7 +331,6 @@ int main(int argc, char **argv)
     close(server_socket);
     return 0;
 }
-
 
 timespec timespec_diff(const timespec &start, const timespec &end)
 {
