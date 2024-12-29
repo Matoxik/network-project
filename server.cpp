@@ -256,8 +256,7 @@ int main(int argc, char **argv)
                 {
                     client_objects[i].x += X_VELOCITY; // Maksymalna prędkość w prawo
                 }
-              
-                
+
                 // Sprawdzanie timeoutu klienta
                 time_since_heard_from_clients[i] += SECONDS_PER_TICK;
                 if (time_since_heard_from_clients[i] > CLIENT_TIMEOUT)
@@ -271,21 +270,25 @@ int main(int argc, char **argv)
         // tworzenie state packet
         buffer[0] = (unsigned char)Server_Message::State;
         int bytes_written = 1;
+
         for (unsigned short i = 0; i < MAX_CLIENTS; ++i)
         {
             if (client_endpoints[i].address)
-            {
+            { // Gracz istnieje
                 memcpy(&buffer[bytes_written], &i, sizeof(i));
                 bytes_written += sizeof(i);
-
                 memcpy(&buffer[bytes_written], &client_objects[i].x, sizeof(client_objects[i].x));
                 bytes_written += sizeof(client_objects[i].x);
-
                 memcpy(&buffer[bytes_written], &client_objects[i].y, sizeof(client_objects[i].y));
                 bytes_written += sizeof(client_objects[i].y);
-
                 memcpy(&buffer[bytes_written], &client_objects[i].facing, sizeof(client_objects[i].facing));
                 bytes_written += sizeof(client_objects[i].facing);
+            }
+            else
+            {         // Slot jest pusty
+                unsigned short empty_slot = i | 0x8000; // Oznacz jako "do usunięcia"
+                memcpy(&buffer[bytes_written], &empty_slot, sizeof(empty_slot));
+                bytes_written += sizeof(empty_slot);
             }
         }
 
