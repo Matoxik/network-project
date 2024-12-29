@@ -21,7 +21,7 @@
 #define MAX_CLIENTS 12
 
 const unsigned short PORT = 1100;
-const unsigned int SOCKET_BUFFER_SIZE = 1024;
+const unsigned int SOCKET_BUFFER_SIZE = 65536;
 
 timespec timespec_diff(const timespec &start, const timespec &end);
 float timespec_to_seconds(const timespec &ts);
@@ -76,6 +76,11 @@ int main()
     fcntl(client_socket, F_SETFL, flags | O_NONBLOCK);
 
     char buffer[SOCKET_BUFFER_SIZE];
+    setsockopt(client_socket, SOL_SOCKET, SO_RCVBUF, &buffer, sizeof(buffer));
+    setsockopt(client_socket, SOL_SOCKET, SO_SNDBUF, &buffer, sizeof(buffer));
+    int opt = 1;
+    setsockopt(client_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
     IP_Endpoint server_endpoint = ip_endpoint_create(127, 0, 0, 1, PORT);
 
     buffer[0] = (char)Client_Message::Join;

@@ -19,7 +19,7 @@
 #define CLIENT_TIMEOUT 5.0f
 
 const unsigned short PORT = 1100;
-const unsigned int SOCKET_BUFFER_SIZE = 1024;
+const unsigned int SOCKET_BUFFER_SIZE = 65536;
 
 // Funckje pomocnicze do fixed tick rate
 timespec timespec_diff(const timespec &start, const timespec &end);
@@ -89,6 +89,11 @@ int main(int argc, char **argv)
     // Bufor do odbioru danych
 
     char buffer[SOCKET_BUFFER_SIZE];
+
+    setsockopt(server_socket, SOL_SOCKET, SO_RCVBUF, &buffer, sizeof(buffer));
+    setsockopt(server_socket, SOL_SOCKET, SO_SNDBUF, &buffer, sizeof(buffer));
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     // Ustawienie czasu startowego
     timespec clock_frequency, tick_start_time, tick_end_time;
