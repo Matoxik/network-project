@@ -52,7 +52,13 @@
 			"typeinfo": "cpp",
 			"stdlib.h": "c",
 			"in.h": "c",
-			"string.h": "c"
+			"string.h": "c",
+			"cstring": "cpp",
+			"ctime": "cpp",
+			"map": "cpp",
+			"netfwd": "cpp",
+			"ratio": "cpp",
+			"fstream": "cpp"
 		}
 	}
 }

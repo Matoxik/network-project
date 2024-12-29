@@ -16,7 +16,7 @@ Player::Player(const std::string &textureFile, std::map<std::string, sf::Texture
     // Set up the player sprite
     player.setTexture(textureMap[textureFile]);
     player.setTextureRect({50, 55, 400, 330});
-    player.setPosition(900, 600);
+   player.setPosition(500, 900);
     player.setScale(0.5, 0.5);
     player.setOrigin(200, 165); // Setting the center of the player
 
@@ -30,21 +30,12 @@ void Player::draw(RenderWindow &window)
     window.draw(player);
 }
 
+
+
 // Update player movement based on key presses
 void Player::update()
 {
-    // Ograniczenie ruchu w poziomie (lewo-prawo)
-    if ((this->x > 0 && this->getRightEdge() + this->x <= 1920) || // Ruch w prawo i brak kolizji z prawą krawędzią
-        (this->x < 0 && this->getLeftEdge() + this->x >= 0))
-    { // Ruch w lewo i brak kolizji z lewą krawędzią
-        player.move(this->x, 0);
-    }
-
-    // // Ograniczenie ruchu w pionie (góra-dół)
-    // if ((this->y > 0 && this->getDownEdge() + this->y <= 1080) ||  // Ruch w dół i brak kolizji z dolną krawędzią
-    //     (this->y < 0 && this->getUpEdge() + this->y >= 0)) {       // Ruch w górę i brak kolizji z górną krawędzią
-    //     player.move(0, this->y);
-    // }
+        player.setPosition(this->x + 150, 900);
 }
 
 // Methods for getting current position

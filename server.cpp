@@ -247,23 +247,17 @@ int main(int argc, char **argv)
             if (client_endpoints[i].address) // Jeśli klient jest w użyciu
             {
                 // Ruch w lewo
-                if (client_inputs[i].left)
+                if ((client_inputs[i].left) && (client_objects[i].x > -50))
                 {
-                    client_objects[i].x = -X_VELOCITY; // Maksymalna prędkość w lewo
+                    client_objects[i].x += -X_VELOCITY; // Maksymalna prędkość w lewo
                 }
                 // Ruch w prawo
-                else if (client_inputs[i].right)
+                if ((client_inputs[i].right) && (client_objects[i].x < 1680))
                 {
-                    client_objects[i].x = X_VELOCITY; // Maksymalna prędkość w prawo
+                    client_objects[i].x += X_VELOCITY; // Maksymalna prędkość w prawo
                 }
-                else
-                {
-                    client_objects[i].x = 0.0f; // Brak ruchu, zatrzymanie
-                }
-
-                // Aktualizacja pozycji gracza na podstawie prędkości
-                // client_objects[i].x += client_objects[i].speed * SECONDS_PER_TICK;
-
+              
+                
                 // Sprawdzanie timeoutu klienta
                 time_since_heard_from_clients[i] += SECONDS_PER_TICK;
                 if (time_since_heard_from_clients[i] > CLIENT_TIMEOUT)

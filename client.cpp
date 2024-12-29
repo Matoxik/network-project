@@ -107,8 +107,8 @@ int main()
     window.setFramerateLimit(60);
 
     std::vector<Player> players; // Lista graczy
-
     bool is_running = true;
+   
     while (is_running)
     {
         window.clear();
@@ -136,51 +136,57 @@ int main()
                 {
                 case Server_Message::Join_Result:
                 {
-                    if (buffer[1])
+                    if (buffer[1]) // Jeśli serwer zaakceptował
                     {
                         memcpy(&slot, &buffer[2], sizeof(slot));
+       
                     }
                     else
                     {
-                        perror("server didn't let us in\n");
+                        perror("Server didn't let us in\n");
                     }
                 }
                 break;
+
                 case Server_Message::State:
                 {
-                    int bytes_read = 1;
-                    unsigned short id;
-
-                    while (bytes_read < bytes_received)
-                    {
-                        memcpy(&id, &buffer[bytes_read], sizeof(id));
-                        bytes_read += sizeof(id);
-
-                        // Sprawdzenie, czy gracz istnieje w wektorze
-                        if (id >= players.size())
+                    
+                    
+                        int bytes_read = 1;
+                        unsigned short id;
+                        while (bytes_read < bytes_received)
                         {
-                            // Mapowanie tekstur na podstawie ID
-                            std::string textureFile;
-                            textureFile = "textures/ludzik.png";
+                            memcpy(&id, &buffer[bytes_read], sizeof(id));
+                            bytes_read += sizeof(id);
 
-                            // Dodanie nowego gracza, przekazując mapę tekstur
-                            players.emplace_back(textureFile, textureMap);
-                            std::cout << "Dodano gracza ID: " << id << " z teksturą: " << textureFile << "\n";
+                            // Sprawdzenie, czy gracz istnieje w wektorze
+                            if (id >= players.size())
+                            {
+                                // Mapowanie tekstur na podstawie ID
+                                std::string textureFile = "textures/ludzik.png";
+
+                                // Dodanie nowego gracza, przekazując mapę tekstur
+                                players.emplace_back(textureFile, textureMap);
+                                std::cout << "Dodano gracza ID: " << id << " z teksturą: " << textureFile << "\n";
+                            }
+
+                            // Aktualizacja pozycji istniejącego gracza
+                            memcpy(&players[id].x, &buffer[bytes_read], sizeof(players[id].x));
+                            bytes_read += sizeof(players[id].x);
+                            memcpy(&players[id].y, &buffer[bytes_read], sizeof(players[id].y));
+                            bytes_read += sizeof(players[id].y);
+                            memcpy(&players[id].facing, &buffer[bytes_read], sizeof(players[id].facing));
+                            bytes_read += sizeof(players[id].facing);
+
+                            // Aktualizacja pozycji i tekstury
+                            players[id].assignTexture(id);
+                            players[id].update();
+                       
+                           cout<<"X: "<<players[id].x<<"\n";
+                      
                         }
-
-                        // Aktualizacja pozycji istniejącego gracza
-                        memcpy(&players[id].x, &buffer[bytes_read], sizeof(players[id].x));
-                        bytes_read += sizeof(players[id].x);
-
-                        memcpy(&players[id].y, &buffer[bytes_read], sizeof(players[id].y));
-                        bytes_read += sizeof(players[id].y);
-
-                        memcpy(&players[id].facing, &buffer[bytes_read], sizeof(players[id].facing));
-                        bytes_read += sizeof(players[id].facing);
-
-                        players[id].assignTexture(id);
-                        players[id].update();
-                    }
+    
+                    
                 }
                 break;
                 }

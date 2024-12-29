@@ -41,6 +41,7 @@ public:
     
 	//Set player texture based on player ID
 	void assignTexture(unsigned short playerId);
+	void setStartingPosition();
 	
 
 	
