@@ -1,3 +1,4 @@
+// Serwer
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -11,11 +12,11 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define ACCELERATION 0.1f
+#define ACCELERATION 2.0f
 #define X_VELOCITY 6.0f
 #define TURN_SPEED 0.1f
 #define SECONDS_PER_TICK (1.0f / 60.0f)
-#define MAX_CLIENTS 4
+#define MAX_CLIENTS 3
 #define CLIENT_TIMEOUT 5.0f
 
 const unsigned short PORT = 1100;
@@ -246,6 +247,17 @@ int main(int argc, char **argv)
         {
             if (client_endpoints[i].address) // Jeśli klient jest w użyciu
             {
+
+                // Kolizja z ziemia
+                if (client_objects[i].y >= 930)
+                {
+                    client_objects[i].y = 930;
+                }
+                else
+                {
+                    client_objects[i].y += ACCELERATION;
+                }
+
                 // Ruch w lewo
                 if ((client_inputs[i].left) && (client_objects[i].x > -50))
                 {
@@ -285,7 +297,7 @@ int main(int argc, char **argv)
                 bytes_written += sizeof(client_objects[i].facing);
             }
             else
-            {         // Slot jest pusty
+            {                                           // Slot jest pusty
                 unsigned short empty_slot = i | 0x8000; // Oznacz jako "do usunięcia"
                 memcpy(&buffer[bytes_written], &empty_slot, sizeof(empty_slot));
                 bytes_written += sizeof(empty_slot);

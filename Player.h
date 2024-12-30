@@ -19,6 +19,7 @@ public:
 	Player(const std::string &textureFile, std::map<std::string, sf::Texture> &textureMap);
 	
 	unsigned short id;
+	
 	float x, y, facing;
 
 	void draw(RenderWindow& window);
@@ -42,6 +43,9 @@ public:
 	//Set player texture based on player ID
 	void assignTexture(unsigned short playerId);
 	void setStartingPosition();
+
+	//Gravity
+	void moveGravity();
 	
 
 	

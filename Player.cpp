@@ -16,13 +16,14 @@ Player::Player(const std::string &textureFile, std::map<std::string, sf::Texture
     // Set up the player sprite
     player.setTexture(textureMap[textureFile]);
     player.setTextureRect({50, 55, 400, 330});
-   player.setPosition(500, 900);
+    player.setPosition(500, 900);
     player.setScale(0.5, 0.5);
     player.setOrigin(200, 165); // Setting the center of the player
 
     this->x = 0;
     this->y = 0;
     this->facing = 0;
+    
 }
 
 void Player::draw(RenderWindow &window)
@@ -30,12 +31,10 @@ void Player::draw(RenderWindow &window)
     window.draw(player);
 }
 
-
-
 // Update player movement based on key presses
 void Player::update()
 {
-        player.setPosition(this->x + 150, 900);
+    player.setPosition(this->x + 150, this->y);
 }
 
 // Methods for getting current position
@@ -109,7 +108,7 @@ void Player::setLightTexture()
 
 void Player::assignTexture(unsigned short playerId)
 {
-    switch (playerId)
+    switch (playerId % 3)
     {
     case 0:
         // setIceTexture
@@ -127,4 +126,8 @@ void Player::assignTexture(unsigned short playerId)
         player.setTextureRect({50, 55, 400, 330});
         break;
     }
+}
+
+void Player::moveGravity() {
+    player.move(0, 5);
 }

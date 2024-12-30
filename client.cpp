@@ -1,3 +1,4 @@
+// Klient
 #include <iostream>
 #include <cstring>
 #include <arpa/inet.h>
@@ -14,11 +15,13 @@
 #include <errno.h>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
+
 #include "Player.h"
 #include "Background.h"
+#include "Ground.h"
 
 #define SECONDS_PER_TICK (1.0f / 60.0f)
-#define MAX_CLIENTS 12
+#define MAX_CLIENTS 3
 
 const unsigned short PORT = 1100;
 const unsigned int SOCKET_BUFFER_SIZE = 65536;
@@ -62,6 +65,22 @@ enum class Server_Message : unsigned char
     State        // tell client game state
 };
 
+// Is there an intersection of two objects
+template <class T1, class T2>
+bool isIntersection(T1 &A, T2 &B)
+{
+    return A.getRightEdge() >= B.getLeftEdge() && A.getLeftEdge() <= B.getRightEdge() && A.getDownEdge() >= B.getUpEdge() && A.getUpEdge() <= B.getDownEdge();
+}
+
+// Collisions
+bool isPlayerGroundCollision(Player &player, Ground &ground)
+{
+    if (!isIntersection(player, ground))
+        return false;
+    else
+        return true;
+}
+
 int main()
 {
     int client_socket;
@@ -102,11 +121,14 @@ int main()
     timespec clock_frequency, tick_start_time, tick_end_time;
     clock_gettime(CLOCK_MONOTONIC, &clock_frequency);
 
+    // Game variables
     sf::RenderWindow window(sf::VideoMode(1920, 1080), "Network Project <3");
     StartBackground startBackground;
-    window.setFramerateLimit(60);
+    Ground ground;
 
     std::vector<Player> players; // Lista graczy
+
+    window.setFramerateLimit(60);
     bool is_running = true;
 
     while (is_running)
@@ -186,6 +208,8 @@ int main()
                         bytes_read += sizeof(players[id].facing);
                         players[id].assignTexture(id);
                         players[id].update();
+
+                        std::cout << "Y: " << players[id].y << "\n";
                     }
                 }
                 break;
@@ -243,9 +267,11 @@ int main()
         }
 
         startBackground.draw(window);
+        ground.draw(window);
         // Rysowanie wszystkich graczy
         for (unsigned short i = 0; i < players.size(); ++i)
         {
+
             players[i].draw(window);
         }
 
@@ -269,7 +295,6 @@ int main()
     int bytes_written_leave = 1;
     memcpy(&buffer[bytes_written_leave], &slot, sizeof(slot));
     printf("Wyslano leave slot: %d\n", slot);
-    printf("Wyslano leave buffer: %d\n", buffer[1]);
 
     if (sendto(client_socket, buffer, bytes_written_leave, 0, (sockaddr *)&server_address, server_address_size) == -1)
     {
