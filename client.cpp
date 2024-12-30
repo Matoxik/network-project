@@ -130,6 +130,7 @@ int main()
 
     window.setFramerateLimit(60);
     bool is_running = true;
+   
 
     while (is_running)
     {
@@ -232,7 +233,7 @@ int main()
             switch (event.key.code)
             {
             case sf::Keyboard::Up:
-                g_input.up = is_pressed;
+                 g_input.up = is_pressed;
                 break;
             case sf::Keyboard::Down:
                 g_input.down = is_pressed;
@@ -271,7 +272,6 @@ int main()
         // Rysowanie wszystkich graczy
         for (unsigned short i = 0; i < players.size(); ++i)
         {
-
             players[i].draw(window);
         }
 

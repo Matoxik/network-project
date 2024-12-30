@@ -36,7 +36,7 @@ bool operator==(const IP_Endpoint &a, const IP_Endpoint &b) { return a.address =
 
 struct Player_State
 {
-    float x, y, facing, speed;
+    float x, y, facing, y_velocity;
 };
 
 struct Player_Input
@@ -248,16 +248,33 @@ int main(int argc, char **argv)
             if (client_endpoints[i].address) // Jeśli klient jest w użyciu
             {
 
-                // Kolizja z ziemia
-                if (client_objects[i].y >= 930)
+                //Skok
+                if (client_inputs[i].up && client_objects[i].y_velocity == 0 && client_objects[i].y == 930.0f) 
                 {
-                    client_objects[i].y = 930;
-                }
-                else
-                {
-                    client_objects[i].y += ACCELERATION;
+                    client_objects[i].y_velocity = -23.0f; // Nadaj graczowi prędkość do góry
                 }
 
+                // Grawitacja
+                if (client_objects[i].y_velocity < 10.0f) // Maksymalna prędkość spadania
+                {
+                    client_objects[i].y_velocity += ACCELERATION * 0.5f; // Przyspieszenie grawitacyjne
+                }
+                
+
+               
+
+                // Aktualizacja pozycji gracza w pionie
+                client_objects[i].y += client_objects[i].y_velocity;
+
+                // Sprawdź, czy gracz dotyka ziemi
+                if (client_objects[i].y >= 930.0f) // Pozycja ziemi
+                {
+                    client_objects[i].y = 930.0f;
+                    client_objects[i].y_velocity = 0.0f; // Zatrzymaj ruch pionowy
+                }
+
+              
+               
                 // Ruch w lewo
                 if ((client_inputs[i].left) && (client_objects[i].x > -50))
                 {
