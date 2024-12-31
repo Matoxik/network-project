@@ -23,7 +23,6 @@ Player::Player(const std::string &textureFile, std::map<std::string, sf::Texture
     this->x = 0;
     this->y = 0;
     this->facing = 0;
-    
 }
 
 void Player::draw(RenderWindow &window)
@@ -34,77 +33,9 @@ void Player::draw(RenderWindow &window)
 // Update player movement based on key presses
 void Player::update()
 {
-    player.setPosition(this->x + 150, this->y);
+    player.setPosition(this->x + 150, this->y + 900); 
 }
 
-// Methods for getting current position
-float Player::getUpEdge()
-{
-    return this->player.getPosition().y - 82;
-}
-
-float Player::getDownEdge()
-{
-    return this->player.getPosition().y + 82;
-}
-
-float Player::getLeftEdge()
-{
-    return this->player.getPosition().x - 100;
-}
-
-float Player::getRightEdge()
-{
-    return this->player.getPosition().x + 100;
-}
-
-void Player::setBasicTexture()
-{
-    if (Keyboard::isKeyPressed(Keyboard::Left))
-    {
-        player.setTextureRect({50, 55, 400, 330});
-    }
-    if (Keyboard::isKeyPressed(Keyboard::Right))
-    {
-        player.setTextureRect({535, 55, 400, 330});
-    }
-}
-
-void Player::setIceTexture()
-{
-    if (Keyboard::isKeyPressed(Keyboard::Left))
-    {
-        player.setTextureRect({950, 55, 400, 330});
-    }
-    if (Keyboard::isKeyPressed(Keyboard::Right))
-    {
-        player.setTextureRect({1440, 55, 400, 330});
-    }
-}
-
-void Player::setFireTexture()
-{
-    if (Keyboard::isKeyPressed(Keyboard::Left))
-    {
-        player.setTextureRect({50, 530, 400, 330});
-    }
-    if (Keyboard::isKeyPressed(Keyboard::Right))
-    {
-        player.setTextureRect({545, 530, 400, 330});
-    }
-}
-
-void Player::setLightTexture()
-{
-    if (Keyboard::isKeyPressed(Keyboard::Left))
-    {
-        player.setTextureRect({960, 530, 400, 330});
-    }
-    if (Keyboard::isKeyPressed(Keyboard::Right))
-    {
-        player.setTextureRect({1450, 530, 400, 330});
-    }
-}
 
 void Player::assignTexture(unsigned short playerId)
 {
@@ -112,15 +43,35 @@ void Player::assignTexture(unsigned short playerId)
     {
     case 0:
         // setIceTexture
-        player.setTextureRect({950, 55, 400, 330});
+        if (facing)
+        {
+            player.setTextureRect({950, 55, 400, 330});
+        }
+        else
+        {
+            player.setTextureRect({1440, 55, 400, 330});
+        }
         break;
     case 1:
         // setFireTexture
-        player.setTextureRect({50, 530, 400, 330});
+        if (facing)
+        {
+            player.setTextureRect({50, 530, 400, 330});
+        }
+        else
+        {
+            player.setTextureRect({545, 530, 400, 330});
+        }
         break;
     case 2:
-        // setLightTexture
-        player.setTextureRect({960, 530, 400, 330});
+        if (facing)
+        {
+            player.setTextureRect({960, 530, 400, 330});
+        }
+        else
+        {
+            player.setTextureRect({1450, 530, 400, 330});
+        }
         break;
     default:
         player.setTextureRect({50, 55, 400, 330});
@@ -128,6 +79,7 @@ void Player::assignTexture(unsigned short playerId)
     }
 }
 
-void Player::moveGravity() {
+void Player::moveGravity()
+{
     player.move(0, 5);
 }

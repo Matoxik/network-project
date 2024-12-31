@@ -9,16 +9,23 @@
 using namespace std;
 using namespace sf;
 
-class Ground
+class Button
 {
 public:
-    Ground();
+    Button();
+    
+  
     void draw(RenderWindow &window);
 
     void setPosition(int x, int y);
+    void setNormalTexture(unsigned short playerId);
+    void setPushedTexture(unsigned short playerId);
+    
 
+
+   
 
 private:
     Texture texture;
-    Sprite ground;
+    Sprite button;
 };

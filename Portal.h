@@ -1,3 +1,4 @@
+
 #pragma once
 #include <iostream>
 
@@ -9,16 +10,19 @@
 using namespace std;
 using namespace sf;
 
-class Ground
+
+
+class Portal
 {
 public:
-    Ground();
-    void draw(RenderWindow &window);
+	Portal();
 
-    void setPosition(int x, int y);
+	void changeTexture();
 
+	void draw(RenderWindow& window);
 
 private:
-    Texture texture;
-    Sprite ground;
+	Texture textureFirst;
+	Texture textureSecond;
+	Sprite portal;
 };

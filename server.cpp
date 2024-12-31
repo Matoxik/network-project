@@ -37,6 +37,7 @@ bool operator==(const IP_Endpoint &a, const IP_Endpoint &b) { return a.address =
 struct Player_State
 {
     float x, y, facing, y_velocity;
+    bool is_button_push;
 };
 
 struct Player_Input
@@ -111,6 +112,8 @@ int main(int argc, char **argv)
     }
 
     bool is_running = true;
+    bool is_portal_open = false;
+    bool is_game_finished = false;
 
     while (is_running)
     {
@@ -232,7 +235,7 @@ int main(int argc, char **argv)
 
                     time_since_heard_from_clients[slot] = 0.0f;
 
-                    printf("Client_Message::Input from %hu:%d\n", slot, int(input));
+                    // printf("Client_Message::Input from %hu:%d\n", slot, int(input));
                 }
                 else
                 {
@@ -248,42 +251,120 @@ int main(int argc, char **argv)
             if (client_endpoints[i].address) // Jeśli klient jest w użyciu
             {
 
-                //Skok
-                if (client_inputs[i].up && client_objects[i].y_velocity == 0 && client_objects[i].y == 930.0f) 
+                // Skok
+                if (client_inputs[i].up && client_objects[i].y_velocity == 0 && (client_objects[i].y == 30.0f || client_objects[i].y == -277.0f || client_objects[i].y == -570.0f || client_objects[i].y == -720.0f))
                 {
-                    client_objects[i].y_velocity = -23.0f; // Nadaj graczowi prędkość do góry
+                    client_objects[i].y_velocity = -28.0f; // Nadaj graczowi prędkość do góry
                 }
 
                 // Grawitacja
-                if (client_objects[i].y_velocity < 10.0f) // Maksymalna prędkość spadania
+                if (client_objects[i].y_velocity < 11.0f) // Maksymalna prędkość spadania
                 {
                     client_objects[i].y_velocity += ACCELERATION * 0.5f; // Przyspieszenie grawitacyjne
                 }
-                
-
-               
 
                 // Aktualizacja pozycji gracza w pionie
                 client_objects[i].y += client_objects[i].y_velocity;
 
-                // Sprawdź, czy gracz dotyka ziemi
-                if (client_objects[i].y >= 930.0f) // Pozycja ziemi
+                // Kolizja z dolnym pietrem
+                if (client_objects[i].y >= 30.0f) // Pozycja ziemi
                 {
-                    client_objects[i].y = 930.0f;
-                    client_objects[i].y_velocity = 0.0f; // Zatrzymaj ruch pionowy
+                    client_objects[i].y = 30.0f;
+                    client_objects[i].y_velocity = 0.0f;
                 }
 
-              
-               
+                // Kolizja ze srodkowym najnizszym pietrem
+                if ((client_objects[i].y >= -277.0f && client_objects[i].y < -250.0f) && (client_objects[i].x <= 858 || client_objects[i].x >= 1200)) // Pozycja ziemi
+                {
+                    client_objects[i].y = -277.0f;
+                    client_objects[i].y_velocity = 0.0f;
+                }
+
+                // Uderzenie w srodkowe najnizsze pietro od dolu
+                if ((client_objects[i].y >= -230.0f && client_objects[i].y <= -70.0f) && (client_objects[i].x <= 858 || client_objects[i].x >= 1200)) // Pozycja ziemi
+                {
+                    client_objects[i].y_velocity = 0.0f;
+                }
+
+                // Kolizja ze srodkowym srednim pietrem
+                if ((client_objects[i].y >= -570.0f && client_objects[i].y < -560.0f) && (client_objects[i].x <= 375)) // Pozycja ziemi
+                {
+                    client_objects[i].y = -570.0f;
+                    client_objects[i].y_velocity = 0.0f;
+                }
+
+                // //Uderzenie w srodkowe srednie pietro od dolu
+                if ((client_objects[i].y >= -390.0f && client_objects[i].y < -350.0f) && (client_objects[i].x <= 375)) // Pozycja ziemi
+                {
+                    client_objects[i].y_velocity = 0.0f;
+                }
+
+                // Kolizja z najwyzszym pietrem
+                if ((client_objects[i].y >= -720.0f && client_objects[i].y < -710.0f) && (client_objects[i].x >= 630)) // Pozycja ziemi
+                {
+                    client_objects[i].y = -720.0f;
+                    client_objects[i].y_velocity = 0.0f;
+                }
+
+                // //Uderzenie w najwyzsze pietro od dolu
+                if ((client_objects[i].y >= -520.0f && client_objects[i].y < -500.0f) && (client_objects[i].x >= 630)) // Pozycja ziemi
+                {
+                    client_objects[i].y_velocity = 0.0f;
+                }
+
                 // Ruch w lewo
                 if ((client_inputs[i].left) && (client_objects[i].x > -50))
                 {
                     client_objects[i].x += -X_VELOCITY; // Maksymalna prędkość w lewo
+                    client_objects[i].facing = true;
                 }
                 // Ruch w prawo
                 if ((client_inputs[i].right) && (client_objects[i].x < 1680))
                 {
                     client_objects[i].x += X_VELOCITY; // Maksymalna prędkość w prawo
+                    client_objects[i].facing = false;
+                }
+
+                // Obsluga przycisow niebieskiego
+                if (client_objects[0].x <= 95 && client_objects[0].x >= -80 && client_objects[0].y > -287 && client_objects[0].y < -267)
+                {
+                    client_objects[0].is_button_push = true;
+                }
+                else
+                {
+                    client_objects[0].is_button_push = false;
+                }
+
+                // Obsluga przycisow czerwonego
+                if (client_objects[1].x <= 1580 && client_objects[1].x >= 1420 && client_objects[1].y > -287 && client_objects[1].y < -267)
+                {
+                    client_objects[1].is_button_push = true;
+                }
+                else
+                {
+                    client_objects[1].is_button_push = false;
+                }
+
+                // Obsluga przycisow zoltego
+                if (client_objects[2].x <= 95 && client_objects[2].x >= -80 && client_objects[2].y > -580 && client_objects[2].y < -560)
+                {
+                    client_objects[2].is_button_push = true;
+                }
+                else
+                {
+                    client_objects[2].is_button_push = false;
+                }
+                
+                // Kolizja z portalem
+                if (client_objects[0].is_button_push == true && client_objects[1].is_button_push == true && client_objects[2].is_button_push == true)
+                {
+                    is_portal_open = true;
+                }
+                
+                //Koniec gry
+                if (is_portal_open && client_objects[0].y > -730 && client_objects[0].y < -710 && client_objects[0].x >= 1450 && client_objects[1].y > -730 && client_objects[1].y < -710 && client_objects[1].x >= 1450 && client_objects[2].y > -730 && client_objects[2].y < -710 && client_objects[2].x >= 1450)
+                {
+                    is_game_finished = true;
                 }
 
                 // Sprawdzanie timeoutu klienta
@@ -312,6 +393,12 @@ int main(int argc, char **argv)
                 bytes_written += sizeof(client_objects[i].y);
                 memcpy(&buffer[bytes_written], &client_objects[i].facing, sizeof(client_objects[i].facing));
                 bytes_written += sizeof(client_objects[i].facing);
+                memcpy(&buffer[bytes_written], &client_objects[i].is_button_push, sizeof(client_objects[i].is_button_push));
+                bytes_written += sizeof(client_objects[i].is_button_push);
+                memcpy(&buffer[bytes_written], &is_portal_open, sizeof(is_portal_open));
+                bytes_written += sizeof(is_portal_open);
+                memcpy(&buffer[bytes_written], &is_game_finished, sizeof(is_game_finished));
+                bytes_written += sizeof(is_game_finished);
             }
             else
             {                                           // Slot jest pusty

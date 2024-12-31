@@ -19,6 +19,8 @@
 #include "Player.h"
 #include "Background.h"
 #include "Ground.h"
+#include "Button.h"
+#include "Portal.h"
 
 #define SECONDS_PER_TICK (1.0f / 60.0f)
 #define MAX_CLIENTS 3
@@ -65,21 +67,6 @@ enum class Server_Message : unsigned char
     State        // tell client game state
 };
 
-// Is there an intersection of two objects
-template <class T1, class T2>
-bool isIntersection(T1 &A, T2 &B)
-{
-    return A.getRightEdge() >= B.getLeftEdge() && A.getLeftEdge() <= B.getRightEdge() && A.getDownEdge() >= B.getUpEdge() && A.getUpEdge() <= B.getDownEdge();
-}
-
-// Collisions
-bool isPlayerGroundCollision(Player &player, Ground &ground)
-{
-    if (!isIntersection(player, ground))
-        return false;
-    else
-        return true;
-}
 
 int main()
 {
@@ -124,13 +111,17 @@ int main()
     // Game variables
     sf::RenderWindow window(sf::VideoMode(1920, 1080), "Network Project <3");
     StartBackground startBackground;
-    Ground ground;
+    Ground ground[5];
+    Button buttons[3];
+    Portal portal;
 
     std::vector<Player> players; // Lista graczy
 
     window.setFramerateLimit(60);
     bool is_running = true;
-   
+    bool is_button_push[3];
+    bool is_portal_open = false;
+    bool is_game_finished = false;
 
     while (is_running)
     {
@@ -207,10 +198,21 @@ int main()
                         bytes_read += sizeof(players[id].y);
                         memcpy(&players[id].facing, &buffer[bytes_read], sizeof(players[id].facing));
                         bytes_read += sizeof(players[id].facing);
+                        memcpy(&is_button_push[id], &buffer[bytes_read], sizeof(is_button_push[id]));
+                        bytes_read += sizeof(is_button_push[id]);
+                        memcpy(&is_portal_open, &buffer[bytes_read], sizeof(is_portal_open));
+                        bytes_read += sizeof(is_portal_open);
+                        memcpy(&is_game_finished, &buffer[bytes_read], sizeof(is_game_finished));
+                        bytes_read += sizeof(is_game_finished);
+
                         players[id].assignTexture(id);
                         players[id].update();
 
-                        std::cout << "Y: " << players[id].y << "\n";
+                        if (is_button_push[id])
+                        {
+                            buttons[id].setPushedTexture(id);
+                        }
+
                     }
                 }
                 break;
@@ -221,7 +223,7 @@ int main()
         sf::Event event;
         window.pollEvent(event);
 
-        if (event.type == sf::Event::Closed)
+        if (event.type == sf::Event::Closed || is_game_finished)
         {
             is_running = false;
             break;
@@ -233,7 +235,7 @@ int main()
             switch (event.key.code)
             {
             case sf::Keyboard::Up:
-                 g_input.up = is_pressed;
+                g_input.up = is_pressed;
                 break;
             case sf::Keyboard::Down:
                 g_input.down = is_pressed;
@@ -267,14 +269,44 @@ int main()
             }
         }
 
+        ground[1].setPosition(2400, 730);
+        ground[2].setPosition(0, 730);
+        ground[3].setPosition(1835, 290);
+        ground[4].setPosition(-500, 440);
+
+        buttons[1].setPosition(1655, 685);
+        buttons[2].setPosition(180, 396);
+
         startBackground.draw(window);
-        ground.draw(window);
+
+        // Rysowanie wszystkie ziemie
+        for (unsigned short i = 0; i < 5; ++i)
+        {
+            ground[i].draw(window);
+        }
+
         // Rysowanie wszystkich graczy
         for (unsigned short i = 0; i < players.size(); ++i)
         {
             players[i].draw(window);
         }
 
+        for (unsigned short i = 0; i < 3; ++i)
+        {
+            if (!is_button_push[i])
+            {
+                buttons[i].setNormalTexture(i);
+            }
+
+            buttons[i].draw(window);
+        }
+        if (is_portal_open)
+        {
+            portal.changeTexture();
+        }
+        
+        portal.draw(window);
+        
         window.display();
 
         clock_gettime(CLOCK_MONOTONIC, &tick_end_time);

@@ -18,27 +18,15 @@ class Player
 public:
 	Player(const std::string &textureFile, std::map<std::string, sf::Texture> &textureMap);
 	
-	unsigned short id;
 	
 	float x, y, facing;
 
 	void draw(RenderWindow& window);
 
-	// Methods for getting current position of the player
-	float getUpEdge();
-	float getDownEdge();
-	float getLeftEdge();
-	float getRightEdge();
     
     // Update player movement
     void update();
 	
-	
-	// Methods for choosing player texture based on elemental flags
-	void setIceTexture();
-	void setFireTexture();
-	void setLightTexture();
-	void setBasicTexture();
     
 	//Set player texture based on player ID
 	void assignTexture(unsigned short playerId);

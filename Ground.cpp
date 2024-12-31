@@ -23,23 +23,8 @@ void Ground::draw(RenderWindow& window)
     window.draw(ground);
 }
 
-// Methods for getting current position
-float Ground::getUpEdge()
-{
-    return this->ground.getPosition().y - 30;  
-}
 
-float Ground::getDownEdge()
+void Ground::setPosition(int _x, int _y)
 {
-    return this->ground.getPosition().y + 120;
-}
-
-float Ground::getLeftEdge()
-{
-    return this->ground.getPosition().x - 900; 
-}
-
-float Ground::getRightEdge()
-{
-    return this->ground.getPosition().x + 900;
+    ground.setPosition(_x, _y);
 }
