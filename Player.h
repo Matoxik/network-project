@@ -11,8 +11,6 @@
 using namespace sf;
 using namespace std;
 
-#define MAX_PLAYER_HEALTH 6
-
 class Player
 {
 public:
@@ -20,6 +18,7 @@ public:
 	
 	
 	float x, y, facing;
+	bool is_active;
 
 	void draw(RenderWindow& window);
 
@@ -32,10 +31,7 @@ public:
 	void assignTexture(unsigned short playerId);
 	void setStartingPosition();
 
-	//Gravity
-	void moveGravity();
 	
-
 	
 private:
 	Texture texture;

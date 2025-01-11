@@ -27,24 +27,21 @@ void Button::setPosition(int _x, int _y)
     button.setPosition(_x, _y);
 }
 
-// button.setTextureRect({495, 280, 180, 120});
-//  button.setTextureRect({495, 110, 180, 120});
-//  button.setTextureRect({495, 455, 180, 120});
 
 void Button::setNormalTexture(unsigned short playerId)
 {
     switch (playerId % 3)
     {
     case 0:
-        // Niebieski
+        // Blue
         button.setTextureRect({200, 280, 180, 120});
         break;
     case 1:
-        // Czerwony
+        // Red
         button.setTextureRect({200, 110, 180, 120});
         break;
     case 2:
-        // Zolty
+        // Yellow
         button.setTextureRect({200, 455, 180, 120});
         break;
     default:
@@ -58,15 +55,15 @@ void Button::setPushedTexture(unsigned short _playerId)
     switch (_playerId % 3)
     {
     case 0:
-        // Niebieski
+        // Blue
         button.setTextureRect({495, 280, 180, 120});
         break;
     case 1:
-        // Czerwony
+        // Red
         button.setTextureRect({495, 110, 180, 120});
         break;
     case 2:
-        // Zolty
+        // Yellow
         button.setTextureRect({495, 455, 180, 120});
         break;
     default:

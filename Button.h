@@ -22,9 +22,6 @@ public:
     void setPushedTexture(unsigned short playerId);
     
 
-
-   
-
 private:
     Texture texture;
     Sprite button;

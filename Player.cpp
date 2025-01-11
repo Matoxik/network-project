@@ -3,7 +3,7 @@
 Player::Player(const std::string &textureFile, std::map<std::string, sf::Texture> &textureMap)
 {
 
-    // Jeśli tekstura nie istnieje w mapie, załaduj ją
+    // If texture does not exit in map
     if (textureMap.find(textureFile) == textureMap.end())
     {
         if (!textureMap[textureFile].loadFromFile(textureFile))
@@ -30,7 +30,7 @@ void Player::draw(RenderWindow &window)
     window.draw(player);
 }
 
-// Update player movement based on key presses
+// Update player position 
 void Player::update()
 {
     player.setPosition(this->x + 150, this->y + 900); 
@@ -42,7 +42,7 @@ void Player::assignTexture(unsigned short playerId)
     switch (playerId % 3)
     {
     case 0:
-        // setIceTexture
+        // set blue texture
         if (facing)
         {
             player.setTextureRect({950, 55, 400, 330});
@@ -53,7 +53,7 @@ void Player::assignTexture(unsigned short playerId)
         }
         break;
     case 1:
-        // setFireTexture
+        // set red texture
         if (facing)
         {
             player.setTextureRect({50, 530, 400, 330});
@@ -64,6 +64,7 @@ void Player::assignTexture(unsigned short playerId)
         }
         break;
     case 2:
+        // set yellow texture 
         if (facing)
         {
             player.setTextureRect({960, 530, 400, 330});
@@ -77,9 +78,4 @@ void Player::assignTexture(unsigned short playerId)
         player.setTextureRect({50, 55, 400, 330});
         break;
     }
-}
-
-void Player::moveGravity()
-{
-    player.move(0, 5);
 }
