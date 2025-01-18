@@ -185,7 +185,7 @@ int main()
                 }
 
                 // Delay before the next attempt to receive a response
-                usleep(600000); // 600 ms
+                usleep(300000); // 300 ms
             }
         }
 
@@ -195,22 +195,21 @@ int main()
         // Initialize the game clock frequency
         clock_gettime(CLOCK_MONOTONIC, &clock_frequency);
 
-       
         sf::RenderWindow window(sf::VideoMode(1920, 1080), "Network Project");
-        window.setFramerateLimit(60); 
+        window.setFramerateLimit(60);
 
         // Initialize game objects
-        StartBackground startBackground; 
-        Ground ground[5];               
-        Button buttons[3];              
-        Portal portal;                  
-        std::vector<Player> players;   
+        StartBackground startBackground;
+        Ground ground[5];
+        Button buttons[3];
+        Portal portal;
+        std::vector<Player> players;
 
         // Flags for game state
-        bool is_running = true;                    
-        bool is_button_push[MAX_CLIENTS] = {false}; 
-        bool is_portal_open = false;                
-        bool is_game_finished = false;             
+        bool is_running = true;
+        bool is_button_push[MAX_CLIENTS] = {false};
+        bool is_portal_open = false;
+        bool is_game_finished = false;
 
         // Main game loop
         while (is_running)
@@ -246,7 +245,7 @@ int main()
                     case Server_Message::State:
                     {
                         // Process state updates from the server
-                        int bytes_read = 1; // Start reading 
+                        int bytes_read = 1; // Start reading
                         unsigned short id;  // Temporary variable to store player IDs
 
                         while (bytes_read < bytes_received)
@@ -297,7 +296,6 @@ int main()
                             {
                                 buttons[id].setPushedTexture(id);
                             }
-                            std::cout<<"X: "<<players[id].x<<"\n";
                         }
                     }
                     break;
@@ -365,14 +363,14 @@ int main()
             buttons[2].setPosition(180, 396);
 
             // Draw game objects
-            startBackground.draw(window); 
+            startBackground.draw(window);
             for (unsigned short i = 0; i < 5; ++i)
             {
                 ground[i].draw(window);
             }
             for (unsigned short i = 0; i < players.size(); ++i)
             {
-                players[i].draw(window); 
+                players[i].draw(window);
             }
             for (unsigned short i = 0; i < 3; ++i)
             {
@@ -380,14 +378,14 @@ int main()
                 {
                     buttons[i].setNormalTexture(i); // Reset button texture if not pressed
                 }
-                buttons[i].draw(window); 
+                buttons[i].draw(window);
             }
 
             if (is_portal_open)
             {
                 portal.changeTexture(); // Change portal texture if it's open
             }
-            portal.draw(window); 
+            portal.draw(window);
 
             window.display(); // Display the rendered frame
 
