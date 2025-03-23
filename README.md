@@ -27,6 +27,7 @@ g++ -Wall client.cpp Player.cpp Exception.cpp Background.cpp Ground.cpp Button.c
 ![obraz](https://github.com/user-attachments/assets/3578763c-0e39-4e42-bac1-d4b98932bc69)
 
 
+![obraz](https://github.com/user-attachments/assets/952a3658-0d8a-4c40-84dc-e8da137185cf)
 
 
 
